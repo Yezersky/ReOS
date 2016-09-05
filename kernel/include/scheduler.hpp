@@ -12,14 +12,13 @@
 #include <string.hpp>
 
 #include "process.hpp"
+#include "net/socket.hpp"
 
 #include "vfs/path.hpp"
 
 namespace scheduler {
 
 constexpr const size_t MAX_PROCESS = 128;
-
-constexpr const pid_t INVALID_PID = 1024 * 1024 * 1024; //I'm pretty sure we won't violate this limit
 
 pid_t get_pid();
 scheduler::process_t& get_process(pid_t pid);
@@ -59,6 +58,8 @@ size_t register_new_socket(network::socket_domain domain, network::socket_type t
 network::socket& get_socket(size_t fd);
 bool has_socket(size_t fd);
 void release_socket(size_t fd);
+std::vector<network::socket>& get_sockets();
+std::vector<network::socket>& get_sockets(pid_t pid);
 
 const path& get_working_directory();
 void set_working_directory(const path& directory);

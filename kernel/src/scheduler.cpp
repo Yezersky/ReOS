@@ -918,7 +918,7 @@ const path& scheduler::get_handle(size_t fd){
 size_t scheduler::register_new_socket(network::socket_domain domain, network::socket_type type, network::socket_protocol protocol){
     auto id = pcb[current_pid].sockets.size();
 
-    pcb[current_pid].sockets.emplace_back(id, domain, type, protocol, 1);
+    pcb[current_pid].sockets.emplace_back(id, domain, type, protocol, 1, false);
 
     return id;
 }
@@ -933,6 +933,14 @@ bool scheduler::has_socket(size_t fd){
 
 network::socket& scheduler::get_socket(size_t fd){
     return pcb[current_pid].sockets[fd];
+}
+
+std::vector<network::socket>& scheduler::get_sockets(){
+    return pcb[current_pid].sockets;
+}
+
+std::vector<network::socket>& scheduler::get_sockets(scheduler::pid_t pid){
+    return pcb[pid].sockets;
 }
 
 const path& scheduler::get_working_directory(){
