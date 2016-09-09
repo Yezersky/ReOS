@@ -1,8 +1,8 @@
 //=======================================================================
 // Copyright Baptiste Wicht 2013-2016.
-// Distributed under the Boost Software License, Version 1.0.
-// (See accompanying file LICENSE_1_0.txt or copy at
-//  http://www.boost.org/LICENSE_1_0.txt)
+// Distributed under the terms of the MIT License.
+// (See accompanying file LICENSE or copy at
+//  http://www.opensource.org/licenses/MIT)
 //=======================================================================
 
 #ifndef EXPECTED_H
@@ -555,9 +555,18 @@ inline expected<T, E> make_expected_from_error(E v){
     return expected<T, E>(exceptional<E>(v));
 }
 
+template<typename T, typename E>
+inline expected<T, E> make_unexpected(E v){
+    return expected<T, E>(exceptional<E>(v));
+}
+
 inline expected<void> make_expected(){
     return expected<void>();
 }
+
+// Make sure the size is maintained reasonable
+static_assert(sizeof(expected<void>) == 2 * sizeof(size_t), "expected<void> should not have overhead");
+static_assert(sizeof(expected<size_t>) == 2 * sizeof(size_t), "expected<size_t> should not have overhead");
 
 } //end of namespace std
 

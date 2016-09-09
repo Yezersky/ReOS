@@ -1,8 +1,8 @@
 //=======================================================================
 // Copyright Baptiste Wicht 2013-2016.
-// Distributed under the Boost Software License, Version 1.0.
-// (See accompanying file LICENSE_1_0.txt or copy at
-//  http://www.boost.org/LICENSE_1_0.txt)
+// Distributed under the terms of the MIT License.
+// (See accompanying file LICENSE or copy at
+//  http://www.opensource.org/licenses/MIT)
 //=======================================================================
 
 #include <types.hpp>
@@ -518,7 +518,7 @@ bool paging::user_map(scheduler::process_t& process, size_t virt, size_t physica
         clear_physical_page(physical_pdpt);
 
         process.paging_size += paging::PAGE_SIZE;
-        process.segments.emplace_back(physical_pdpt, 1);
+        process.segments.emplace_back(physical_pdpt, 1UL);
     }
 
     auto physical_pdpt = reinterpret_cast<uintptr_t>(pml4t[pml4e]) & ~0xFFF;
@@ -537,7 +537,7 @@ bool paging::user_map(scheduler::process_t& process, size_t virt, size_t physica
         clear_physical_page(physical_pd);
 
         process.paging_size += paging::PAGE_SIZE;
-        process.segments.emplace_back(physical_pdpt, 1);
+        process.segments.emplace_back(physical_pdpt, 1UL);
     }
 
     auto physical_pd = reinterpret_cast<uintptr_t>(pdpt[pdpte]) & ~0xFFF;
@@ -556,7 +556,7 @@ bool paging::user_map(scheduler::process_t& process, size_t virt, size_t physica
         clear_physical_page(physical_pt);
 
         process.paging_size += paging::PAGE_SIZE;
-        process.segments.emplace_back(physical_pdpt, 1);
+        process.segments.emplace_back(physical_pdpt, 1UL);
     }
 
     auto physical_pt = reinterpret_cast<uintptr_t>(pd[pde]) & ~0xFFF;

@@ -1,14 +1,15 @@
 //=======================================================================
 // Copyright Baptiste Wicht 2013-2016.
-// Distributed under the Boost Software License, Version 1.0.
-// (See accompanying file LICENSE_1_0.txt or copy at
-//  http://www.boost.org/LICENSE_1_0.txt)
+// Distributed under the terms of the MIT License.
+// (See accompanying file LICENSE or copy at
+//  http://www.opensource.org/licenses/MIT)
 //=======================================================================
 
 #ifndef NET_ETHERNET_LAYER_H
 #define NET_ETHERNET_LAYER_H
 
 #include <types.hpp>
+#include <expected.hpp>
 
 #include "net/network.hpp"
 #include "net/ethernet_packet.hpp"
@@ -35,8 +36,8 @@ void mac64_to_mac6(uint64_t input, char* mac);
 
 void decode(network::interface_descriptor& interface, packet& packet);
 
-packet prepare_packet(network::interface_descriptor& interface, size_t size, size_t destination, ether_type type);
-packet prepare_packet(char* buffer, network::interface_descriptor& interface, size_t size, size_t destination, ether_type type);
+std::expected<packet> prepare_packet(network::interface_descriptor& interface, size_t size, size_t destination, ether_type type);
+std::expected<packet> prepare_packet(char* buffer, network::interface_descriptor& interface, size_t size, size_t destination, ether_type type);
 void finalize_packet(network::interface_descriptor& interface, packet& p);
 
 } // end of ethernet namespace

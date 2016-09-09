@@ -1,8 +1,8 @@
 //=======================================================================
 // Copyright Baptiste Wicht 2013-2016.
-// Distributed under the Boost Software License, Version 1.0.
-// (See accompanying file LICENSE_1_0.txt or copy at
-//  http://www.boost.org/LICENSE_1_0.txt)
+// Distributed under the terms of the MIT License.
+// (See accompanying file LICENSE or copy at
+//  http://www.opensource.org/licenses/MIT)
 //=======================================================================
 
 #ifndef RTL_8139_H
@@ -17,6 +17,7 @@
 namespace rtl8139 {
 
 void init_driver(network::interface_descriptor& interface, pci::device_descriptor& pci_device);
+void finalize_driver(network::interface_descriptor& interface);
 
 } //end of namespace rtl8139
 

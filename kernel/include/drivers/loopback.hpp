@@ -5,13 +5,18 @@
 //  http://www.opensource.org/licenses/MIT)
 //=======================================================================
 
-#include "gdt.hpp"
-#include "early_memory.hpp"
+#ifndef LOOPBACK_H
+#define LOOPBACK_H
 
-void gdt::flush_tss(){
-    asm volatile("mov ax, %0; ltr ax;" : : "i" (gdt::TSS_SELECTOR + 0x3) : "rax");
-}
+#include <types.hpp>
 
-gdt::task_state_segment_t& gdt::tss(){
-    return *reinterpret_cast<task_state_segment_t*>(early::tss_address);
-}
+#include "net/network.hpp"
+
+namespace loopback {
+
+void init_driver(network::interface_descriptor& interface);
+void finalize_driver(network::interface_descriptor& interface);
+
+} //end of namespace loopback
+
+#endif

@@ -1,8 +1,8 @@
 //=======================================================================
 // Copyright Baptiste Wicht 2013-2016.
-// Distributed under the Boost Software License, Version 1.0.
-// (See accompanying file LICENSE_1_0.txt or copy at
-//  http://www.boost.org/LICENSE_1_0.txt)
+// Distributed under the terms of the MIT License.
+// (See accompanying file LICENSE or copy at
+//  http://www.opensource.org/licenses/MIT)
 //=======================================================================
 
 #include <vector.hpp>
@@ -17,6 +17,8 @@
 #include "kernel_utils.hpp"
 
 namespace {
+
+constexpr const size_t ARP_TIMEOUT = 5000;
 
 void compute_checksum(network::ip::header* header){
     auto ihl = header->version_ihl & 0xF;
@@ -68,6 +70,8 @@ uint32_t network::ip::ip_to_ip32(address ip){
 }
 
 void network::ip::decode(network::interface_descriptor& interface, network::ethernet::packet& packet){
+    packet.tag(1, packet.index);
+
     header* ip_header = reinterpret_cast<header*>(packet.payload + packet.index);
 
     logging::logf(logging::log_level::TRACE, "ip: Start IPv4 packet handling\n");
@@ -110,24 +114,36 @@ void network::ip::decode(network::interface_descriptor& interface, network::ethe
     }
 }
 
-network::ethernet::packet network::ip::prepare_packet(network::interface_descriptor& interface, size_t size, address& target_ip, size_t protocol){
-    auto target_mac = network::arp::get_mac_force(interface, target_ip);
+std::expected<network::ethernet::packet> network::ip::prepare_packet(network::interface_descriptor& interface, size_t size, address& target_ip, size_t protocol){
+    auto target_mac = network::arp::get_mac_force(interface, target_ip, ARP_TIMEOUT);
+
+    if(!target_mac){
+        return std::make_expected_from_error<network::ethernet::packet>(target_mac.error());
+    }
 
     // Ask the ethernet layer to craft a packet
-    auto packet = network::ethernet::prepare_packet(interface, size + sizeof(header), target_mac, ethernet::ether_type::IPV4);
+    auto packet = network::ethernet::prepare_packet(interface, size + sizeof(header), *target_mac, ethernet::ether_type::IPV4);
 
-    ::prepare_packet(packet, interface, size, target_ip, protocol);
+    if(packet){
+        ::prepare_packet(*packet, interface, size, target_ip, protocol);
+    }
 
     return packet;
 }
 
-network::ethernet::packet network::ip::prepare_packet(char* buffer, network::interface_descriptor& interface, size_t size, address& target_ip, size_t protocol){
-    auto target_mac = network::arp::get_mac_force(interface, target_ip);
+std::expected<network::ethernet::packet> network::ip::prepare_packet(char* buffer, network::interface_descriptor& interface, size_t size, address& target_ip, size_t protocol){
+    auto target_mac = network::arp::get_mac_force(interface, target_ip, ARP_TIMEOUT);
+
+    if(!target_mac){
+        return std::make_expected_from_error<network::ethernet::packet>(target_mac.error());
+    }
 
     // Ask the ethernet layer to craft a packet
-    auto packet = network::ethernet::prepare_packet(buffer, interface, size + sizeof(header), target_mac, ethernet::ether_type::IPV4);
+    auto packet = network::ethernet::prepare_packet(buffer, interface, size + sizeof(header), *target_mac, ethernet::ether_type::IPV4);
 
-    ::prepare_packet(packet, interface, size, target_ip, protocol);
+    if(packet){
+        ::prepare_packet(*packet, interface, size, target_ip, protocol);
+    }
 
     return packet;
 }

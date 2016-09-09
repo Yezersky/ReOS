@@ -1,8 +1,8 @@
 //=======================================================================
 // Copyright Baptiste Wicht 2013-2016.
-// Distributed under the Boost Software License, Version 1.0.
-// (See accompanying file LICENSE_1_0.txt or copy at
-//  http://www.boost.org/LICENSE_1_0.txt)
+// Distributed under the terms of the MIT License.
+// (See accompanying file LICENSE or copy at
+//  http://www.opensource.org/licenses/MIT)
 //=======================================================================
 
 #ifndef NET_SOCKET_H
@@ -35,9 +35,9 @@ struct socket {
     circular_buffer<network::ethernet::packet, 32> listen_packets;
     sleep_queue listen_queue;
 
-    //socket(){}
-    //socket(size_t id, socket_domain domain, socket_type type, socket_protocol protocol)
-            //: id(id), domain(domain), type(type), protocol(protocol) {}
+    socket(){}
+    socket(size_t id, socket_domain domain, socket_type type, socket_protocol protocol, size_t next_fd, bool listen)
+            : id(id), domain(domain), type(type), protocol(protocol), next_fd(next_fd), listen(listen) {}
 
     void invalidate(){
         id = 0xFFFFFFFF;

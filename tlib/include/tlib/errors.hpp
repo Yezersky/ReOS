@@ -1,8 +1,8 @@
 //=======================================================================
 // Copyright Baptiste Wicht 2013-2016.
-// Distributed under the Boost Software License, Version 1.0.
-// (See accompanying file LICENSE_1_0.txt or copy at
-//  http://www.boost.org/LICENSE_1_0.txt)
+// Distributed under the terms of the MIT License.
+// (See accompanying file LICENSE or copy at
+//  http://www.opensource.org/licenses/MIT)
 //=======================================================================
 
 #ifndef ERRORS_H
@@ -39,6 +39,7 @@ constexpr const size_t ERROR_SOCKET_UNIMPLEMENTED     = 24;
 constexpr const size_t ERROR_SOCKET_NO_INTERFACE      = 25;
 constexpr const size_t ERROR_SOCKET_INVALID_PACKET_FD = 26;
 constexpr const size_t ERROR_SOCKET_NOT_LISTEN        = 27;
+constexpr const size_t ERROR_SOCKET_TIMEOUT           = 28;
 
 inline const char* error_message(size_t error){
     switch(error){
@@ -96,6 +97,8 @@ inline const char* error_message(size_t error){
             return "The packet file descriptor is invalid";
         case ERROR_SOCKET_NOT_LISTEN:
             return "The socket is not configured to listen";
+        case ERROR_SOCKET_TIMEOUT:
+            return "Network timeout";
         default:
             return "Unknonwn error";
     }

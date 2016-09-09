@@ -1,8 +1,8 @@
 //=======================================================================
 // Copyright Baptiste Wicht 2013-2016.
-// Distributed under the Boost Software License, Version 1.0.
-// (See accompanying file LICENSE_1_0.txt or copy at
-//  http://www.boost.org/LICENSE_1_0.txt)
+// Distributed under the terms of the MIT License.
+// (See accompanying file LICENSE or copy at
+//  http://www.opensource.org/licenses/MIT)
 //=======================================================================
 
 #include "system_calls.hpp"
@@ -23,6 +23,22 @@
 //TODO Split this file
 
 namespace {
+
+int64_t expected_to_i64(const std::expected<void>& status){
+    if(status){
+        return 0;
+    } else {
+        return -status.error();
+    }
+}
+
+int64_t expected_to_i64(const std::expected<size_t>& status){
+    if(status){
+        return *status;
+    } else {
+        return -status.error();
+    }
+}
 
 void sc_print_char(interrupt::syscall_regs* regs){
     k_print(static_cast<char>(regs->rbx));
@@ -97,7 +113,8 @@ void sc_exec(interrupt::syscall_regs* regs){
         params.emplace_back(argv[i]);
     }
 
-    regs->rax = scheduler::exec(file, params);
+    auto status = scheduler::exec(file, params);
+    regs->rax = expected_to_i64(status);
 }
 
 void sc_await_termination(interrupt::syscall_regs* regs){
@@ -159,7 +176,8 @@ void sc_open(interrupt::syscall_regs* regs){
     auto file = reinterpret_cast<char*>(regs->rbx);
     auto flags = regs->rcx;
 
-    regs->rax = vfs::open(file, flags);
+    auto status = vfs::open(file, flags);
+    regs->rax = expected_to_i64(status);
 }
 
 void sc_close(interrupt::syscall_regs* regs){
@@ -330,7 +348,8 @@ void sc_ioctl(interrupt::syscall_regs* regs){
     auto request = regs->rcx;
     auto data = reinterpret_cast<void*>(regs->rdx);
 
-    regs->rax = ioctl(device, static_cast<io::ioctl_request>(request), data);
+    auto status = ioctl(device, static_cast<io::ioctl_request>(request), data);
+    regs->rax = expected_to_i64(status);
 }
 
 void sc_alpha(interrupt::syscall_regs*){
@@ -344,7 +363,13 @@ void sc_socket_open(interrupt::syscall_regs* regs){
     auto type = static_cast<network::socket_type>(regs->rcx);
     auto protocol = static_cast<network::socket_protocol>(regs->rdx);
 
-    regs->rax = network::open(domain, type, protocol);
+    auto socket_fd = network::open(domain, type, protocol);
+
+    if(socket_fd){
+        regs->rax = *socket_fd;
+    } else {
+        regs->rax = -socket_fd.error();
+    }
 }
 
 void sc_socket_close(interrupt::syscall_regs* regs){
@@ -370,26 +395,37 @@ void sc_finalize_packet(interrupt::syscall_regs* regs){
     auto socket_fd = regs->rbx;
     auto packet_fd = regs->rcx;
 
-    regs->rax = network::finalize_packet(socket_fd, packet_fd);
+    auto status = network::finalize_packet(socket_fd, packet_fd);
+    regs->rax = expected_to_i64(status);
 }
 
 void sc_listen(interrupt::syscall_regs* regs){
     auto socket_fd = regs->rbx;
     auto listen = bool(regs->rcx);
 
-    regs->rax = network::listen(socket_fd, listen);
+    auto status = network::listen(socket_fd, listen);
+    regs->rax = expected_to_i64(status);
 }
 
 void sc_wait_for_packet(interrupt::syscall_regs* regs){
     auto socket_fd = regs->rbx;
-    auto listen = bool(regs->rcx);
+    auto user_buffer = reinterpret_cast<char*>(regs->rcx);
 
-    int64_t index;
-    char* buffer;
-    std::tie(index, buffer) = network::wait_for_packet(socket_fd);
+    auto status = network::wait_for_packet(user_buffer, socket_fd);
 
-    regs->rax = index;
-    regs->rbx = reinterpret_cast<size_t>(buffer);
+    regs->rax = expected_to_i64(status);
+    regs->rbx = reinterpret_cast<size_t>(user_buffer);
+}
+
+void sc_wait_for_packet_ms(interrupt::syscall_regs* regs){
+    auto socket_fd = regs->rbx;
+    auto user_buffer = reinterpret_cast<char*>(regs->rcx);
+    auto ms = regs->rdx;
+
+    auto status = network::wait_for_packet(user_buffer, socket_fd, ms);
+
+    regs->rax = expected_to_i64(status);
+    regs->rbx = reinterpret_cast<size_t>(user_buffer);
 }
 
 } //End of anonymous namespace
@@ -629,6 +665,10 @@ void system_call_entry(interrupt::syscall_regs* regs){
 
         case 0x3005:
             sc_wait_for_packet(regs);
+            break;
+
+        case 0x3006:
+            sc_wait_for_packet_ms(regs);
             break;
 
         // Special system calls

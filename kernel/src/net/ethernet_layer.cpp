@@ -1,8 +1,8 @@
 //=======================================================================
 // Copyright Baptiste Wicht 2013-2016.
-// Distributed under the Boost Software License, Version 1.0.
-// (See accompanying file LICENSE_1_0.txt or copy at
-//  http://www.boost.org/LICENSE_1_0.txt)
+// Distributed under the terms of the MIT License.
+// (See accompanying file LICENSE or copy at
+//  http://www.opensource.org/licenses/MIT)
 //=======================================================================
 
 #include <vector.hpp>
@@ -51,6 +51,7 @@ uint16_t type_to_code(network::ethernet::ether_type type){
 void prepare_packet(network::ethernet::packet& p, network::interface_descriptor& interface, size_t destination, network::ethernet::ether_type type){
     p.type = type;
     p.index = sizeof(network::ethernet::header);
+    p.interface = interface.id;
 
     auto source_mac = interface.mac_address;
 
@@ -96,6 +97,7 @@ void network::ethernet::decode(network::interface_descriptor& interface, packet&
     logging::logf(logging::log_level::TRACE, "ethernet: Source MAC Address %h \n", source_mac);
     logging::logf(logging::log_level::TRACE, "ethernet: Destination MAC Address %h \n", target_mac);
 
+    packet.tag(0, 0);
     packet.type = decode_ether_type(ether_header);
     packet.index += sizeof(header);
 
@@ -120,7 +122,7 @@ void network::ethernet::decode(network::interface_descriptor& interface, packet&
     logging::logf(logging::log_level::TRACE, "ethernet: Finished decoding packet\n");
 }
 
-network::ethernet::packet network::ethernet::prepare_packet(network::interface_descriptor& interface, size_t size, size_t destination, ether_type type){
+std::expected<network::ethernet::packet> network::ethernet::prepare_packet(network::interface_descriptor& interface, size_t size, size_t destination, ether_type type){
     auto total_size = size + sizeof(header);
 
     network::ethernet::packet p(new char[total_size], total_size);
@@ -130,7 +132,7 @@ network::ethernet::packet network::ethernet::prepare_packet(network::interface_d
     return p;
 }
 
-network::ethernet::packet network::ethernet::prepare_packet(char* buffer, network::interface_descriptor& interface, size_t size, size_t destination, ether_type type){
+std::expected<network::ethernet::packet> network::ethernet::prepare_packet(char* buffer, network::interface_descriptor& interface, size_t size, size_t destination, ether_type type){
     auto total_size = size + sizeof(header);
 
     network::ethernet::packet p(buffer, total_size);

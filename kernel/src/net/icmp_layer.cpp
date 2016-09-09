@@ -1,8 +1,8 @@
 //=======================================================================
 // Copyright Baptiste Wicht 2013-2016.
-// Distributed under the Boost Software License, Version 1.0.
-// (See accompanying file LICENSE_1_0.txt or copy at
-//  http://www.boost.org/LICENSE_1_0.txt)
+// Distributed under the terms of the MIT License.
+// (See accompanying file LICENSE or copy at
+//  http://www.opensource.org/licenses/MIT)
 //=======================================================================
 
 #include "net/ethernet_layer.hpp"
@@ -13,6 +13,8 @@
 #include "logging.hpp"
 #include "kernel_utils.hpp"
 #include "scheduler.hpp"
+
+#include "tlib/errors.hpp"
 
 namespace {
 
@@ -52,17 +54,47 @@ void prepare_packet(network::ethernet::packet& packet, network::icmp::type t, si
 
 } // end of anonymous namespace
 
-void network::icmp::decode(network::interface_descriptor& /*interface*/, network::ethernet::packet& packet){
+void network::icmp::decode(network::interface_descriptor& interface, network::ethernet::packet& packet){
+    packet.tag(2, packet.index);
+
     logging::logf(logging::log_level::TRACE, "icmp: Start ICMP packet handling\n");
 
     auto* icmp_header = reinterpret_cast<header*>(packet.payload + packet.index);
 
     auto command_type = static_cast<type>(icmp_header->type);
 
+    auto command_index = packet.index + sizeof(network::icmp::header) - sizeof(uint32_t);
+
     switch(command_type){
         case type::ECHO_REQUEST:
-            logging::logf(logging::log_level::TRACE, "icmp: Echo Request\n");
-            break;
+            {
+                logging::logf(logging::log_level::TRACE, "icmp: received Echo Request\n");
+
+                auto ip_index = packet.tag(1);
+                auto* ip_header = reinterpret_cast<network::ip::header*>(packet.payload + ip_index);
+
+                auto target_ip = network::ip::ip32_to_ip(ip_header->target_ip);
+                auto source_ip = network::ip::ip32_to_ip(ip_header->source_ip);
+
+                if(target_ip == interface.ip_address){
+                    logging::logf(logging::log_level::TRACE, "icmp: Reply to Echo Request for own IP\n");
+
+                    auto reply_packet = network::icmp::prepare_packet(interface, source_ip, 0x0, type::ECHO_REPLY, 0x0);
+
+                    if(reply_packet){
+                        auto* command_header = reinterpret_cast<echo_request_header*>(packet.payload + command_index);
+                        auto* reply_command_header = reinterpret_cast<echo_request_header*>(reply_packet->payload + reply_packet->index);
+
+                        *reply_command_header = *command_header;
+                    } else {
+                        logging::logf(logging::log_level::ERROR, "icmp: Failed to reply: %s\n", std::error_message(reply_packet.error()));
+                    }
+
+                    network::icmp::finalize_packet(interface, *reply_packet);
+                }
+
+                break;
+            }
         case type::ECHO_REPLY:
             logging::logf(logging::log_level::TRACE, "icmp: Echo Reply\n");
             break;
@@ -84,7 +116,11 @@ void network::icmp::decode(network::interface_descriptor& /*interface*/, network
         if(state != scheduler::process_state::EMPTY && state != scheduler::process_state::NEW && state != scheduler::process_state::KILLED){
             for(auto& socket : scheduler::get_sockets(pid)){
                 if(socket.listen && socket.protocol == network::socket_protocol::ICMP){
-                    socket.listen_packets.push(packet);
+                    auto copy = packet;
+                    copy.payload = new char[copy.payload_size];
+                    std::copy_n(packet.payload, packet.payload_size, copy.payload);
+
+                    socket.listen_packets.push(copy);
                     socket.listen_queue.wake_up();
                 }
             }
@@ -92,20 +128,24 @@ void network::icmp::decode(network::interface_descriptor& /*interface*/, network
     }
 }
 
-network::ethernet::packet network::icmp::prepare_packet(network::interface_descriptor& interface, network::ip::address target_ip, size_t payload_size, type t, size_t code){
+std::expected<network::ethernet::packet> network::icmp::prepare_packet(network::interface_descriptor& interface, network::ip::address target_ip, size_t payload_size, type t, size_t code){
     // Ask the IP layer to craft a packet
     auto packet = network::ip::prepare_packet(interface, sizeof(header) + payload_size, target_ip, 0x01);
 
-    ::prepare_packet(packet, t, code);
+    if(packet){
+        ::prepare_packet(*packet, t, code);
+    }
 
     return packet;
 }
 
-network::ethernet::packet network::icmp::prepare_packet(char* buffer, network::interface_descriptor& interface, network::ip::address target_ip, size_t payload_size, type t, size_t code){
+std::expected<network::ethernet::packet> network::icmp::prepare_packet(char* buffer, network::interface_descriptor& interface, network::ip::address target_ip, size_t payload_size, type t, size_t code){
     // Ask the IP layer to craft a packet
     auto packet = network::ip::prepare_packet(buffer, interface, sizeof(header) + payload_size, target_ip, 0x01);
 
-    ::prepare_packet(packet, t, code);
+    if(packet){
+        ::prepare_packet(*packet, t, code);
+    }
 
     return packet;
 }
@@ -128,18 +168,25 @@ void network::icmp::ping(network::interface_descriptor& interface, network::ip::
 
     auto target_mac = network::arp::get_mac_force(interface, target_ip);
 
-    logging::logf(logging::log_level::TRACE, "icmp: Target MAC Address: %h\n", target_mac);
+    if(!target_mac){
+        logging::logf(logging::log_level::TRACE, "icmp: Failed to get MAC Address from IP\n");
+        return;
+    }
+
+    logging::logf(logging::log_level::TRACE, "icmp: Target MAC Address: %h\n", *target_mac);
 
     // Ask the ICMP layer to craft a packet
     auto packet = network::icmp::prepare_packet(interface, target_ip, 0, type::ECHO_REQUEST, 0);
 
-    // Set the Command header
+    if(packet){
+        // Set the Command header
 
-    auto* command_header = reinterpret_cast<echo_request_header*>(packet.payload + packet.index);
+        auto* command_header = reinterpret_cast<echo_request_header*>(packet->payload + packet->index);
 
-    command_header->identifier = 0x666;
-    command_header->sequence = echo_sequence++;
+        command_header->identifier = 0x666;
+        command_header->sequence = echo_sequence++;
 
-    // Send the packet back to ICMP
-    network::icmp::finalize_packet(interface, packet);
+        // Send the packet back to ICMP
+        network::icmp::finalize_packet(interface, *packet);
+    }
 }

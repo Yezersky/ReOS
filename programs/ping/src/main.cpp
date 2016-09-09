@@ -1,8 +1,8 @@
 //=======================================================================
 // Copyright Baptiste Wicht 2013-2016.
-// Distributed under the Boost Software License, Version 1.0.
-// (See accompanying file LICENSE_1_0.txt or copy at
-//  http://www.boost.org/LICENSE_1_0.txt)
+// Distributed under the terms of the MIT License.
+// (See accompanying file LICENSE or copy at
+//  http://www.opensource.org/licenses/MIT)
 //=======================================================================
 
 #include <tlib/system.hpp>
@@ -47,36 +47,80 @@ int main(int argc, char* argv[]) {
     desc.type         = tlib::icmp::type::ECHO_REQUEST;
     desc.code         = 0;
 
-    auto packet = tlib::prepare_packet(*socket, &desc);
+    static constexpr const size_t N = 4;
+    static constexpr const size_t timeout_ms = 2000;
 
-    if (!packet) {
-        tlib::printf("ping: prepare_packet error: %s\n", std::error_message(packet.error()));
-        return 1;
-    }
+    for(size_t i = 0; i < N; ++i){
+        auto packet = tlib::prepare_packet(*socket, &desc);
 
-    auto* command_header = reinterpret_cast<tlib::icmp::echo_request_header*>(packet->payload + packet->index);
+        if (!packet) {
+            if(packet.error() == std::ERROR_SOCKET_TIMEOUT){
+                tlib::printf("Unable to resolve MAC address for target IP\n");
+                return 1;
+            }
 
-    command_header->identifier = 0x666;
-    command_header->sequence   = 0x1;
+            tlib::printf("ping: prepare_packet error: %s\n", std::error_message(packet.error()));
+            return 1;
+        }
 
-    status = tlib::finalize_packet(*socket, *packet);
-    if (!status) {
-        tlib::printf("ping: finalize_packet error: %s\n", std::error_message(status.error()));
-        return 1;
-    }
+        auto* command_header = reinterpret_cast<tlib::icmp::echo_request_header*>(packet->payload + packet->index);
 
-    auto p = tlib::wait_for_packet(*socket);
-    if (!p) {
-        tlib::printf("ping: wait_for_packet error: %s\n", std::error_message(p.error()));
-        return 1;
-    }
+        command_header->identifier = 0x666;
+        command_header->sequence   = 0x1 + i;
 
-    auto* icmp_header = reinterpret_cast<tlib::icmp::header*>(p->payload + p->index);
+        status = tlib::finalize_packet(*socket, *packet);
+        if (!status) {
+            tlib::printf("ping: finalize_packet error: %s\n", std::error_message(status.error()));
+            return 1;
+        }
 
-    auto command_type = static_cast<tlib::icmp::type>(icmp_header->type);
+        auto before = tlib::ms_time();
+        auto after = before;
 
-    if(command_type == tlib::icmp::type::ECHO_REPLY){
-        tlib::printf("reply received from %s\n", ip.c_str());
+        while(true){
+            // Make sure we don't wait for more than the timeout
+            if(after > before + timeout_ms){
+                break;
+            }
+
+            auto remaining = timeout_ms - (after - before);
+
+            bool handled = false;
+
+            auto p = tlib::wait_for_packet(*socket, remaining);
+            if (!p) {
+                if(p.error() == std::ERROR_SOCKET_TIMEOUT){
+                    tlib::printf("%s unreachable\n", ip.c_str());
+                    handled = true;
+                } else {
+                    tlib::printf("ping: wait_for_packet error: %s\n", std::error_message(p.error()));
+                    return 1;
+                }
+            } else {
+                auto* icmp_header = reinterpret_cast<tlib::icmp::header*>(p->payload + p->index);
+
+                auto command_type = static_cast<tlib::icmp::type>(icmp_header->type);
+
+                if(command_type == tlib::icmp::type::ECHO_REPLY){
+                    tlib::printf("Reply received from %s\n", ip.c_str());
+                    handled = true;
+                }
+
+                // The rest of the packets are simply ignored
+
+                tlib::release_packet(*p);
+            }
+
+            if(handled){
+                break;
+            }
+
+            after = tlib::ms_time();
+        }
+
+        if(i < N - 1){
+            tlib::sleep_ms(1000);
+        }
     }
 
     status = tlib::listen(*socket, false);

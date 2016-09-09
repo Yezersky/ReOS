@@ -1,8 +1,8 @@
 //=======================================================================
 // Copyright Baptiste Wicht 2013-2016.
-// Distributed under the Boost Software License, Version 1.0.
-// (See accompanying file LICENSE_1_0.txt or copy at
-//  http://www.boost.org/LICENSE_1_0.txt)
+// Distributed under the terms of the MIT License.
+// (See accompanying file LICENSE or copy at
+//  http://www.opensource.org/licenses/MIT)
 //=======================================================================
 
 #include <types.hpp>
@@ -140,7 +140,7 @@ size_t get_file(const sys_folder& folder, const path& file_path, vfs::file& f) {
 
 size_t ls(const sys_folder& folder, std::vector<vfs::file>& contents) {
     for (auto& file : folder.folders) {
-        contents.emplace_back(file.name, true, false, false, 0);
+        contents.emplace_back(file.name, true, false, false, 0UL);
     }
 
     for (auto& file : folder.values) {

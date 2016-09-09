@@ -1,8 +1,8 @@
 //=======================================================================
 // Copyright Baptiste Wicht 2013-2016.
-// Distributed under the Boost Software License, Version 1.0.
-// (See accompanying file LICENSE_1_0.txt or copy at
-//  http://www.boost.org/LICENSE_1_0.txt)
+// Distributed under the terms of the MIT License.
+// (See accompanying file LICENSE or copy at
+//  http://www.opensource.org/licenses/MIT)
 //=======================================================================
 
 #include "drivers/rtl8139.hpp"
@@ -143,7 +143,9 @@ void packet_handler(interrupt::syscall_regs*, void* data){
         }
 
         desc.cur_rx = cur_rx;
-    } else if(status & (TX_OK | TX_ERR)){
+    }
+
+    if(status & (TX_OK | TX_ERR)){
         auto& dirty_tx = desc.dirty_tx;
         size_t cleaned_up = 0;
 
@@ -174,15 +176,35 @@ void packet_handler(interrupt::syscall_regs*, void* data){
         }
 
         desc.tx_sem.release(cleaned_up);
-    } else {
+    }
+
+    if(!(status & (RX_OK | TX_OK | TX_ERR))){
         // This should not happen since we only enable a few
         // interrupts
         logging::logf(logging::log_level::ERROR, "rtl8139: Receive status unhandled OK\n");
     }
 }
 
-void send_packet(const network::interface_descriptor& interface, network::ethernet::packet& packet){
+void send_packet(network::interface_descriptor& interface, network::ethernet::packet& packet){
     logging::logf(logging::log_level::TRACE, "rtl8139: Start transmitting packet\n");
+
+    auto* ether_header = reinterpret_cast<network::ethernet::header*>(packet.payload);
+
+    // Shortcut packet to self directly to the rx queue
+    if(network::ethernet::mac6_to_mac64(ether_header->target.mac) == interface.mac_address){
+        auto packet_buffer = new char[packet.payload_size];
+
+        std::copy_n(packet.payload, packet.payload_size, packet_buffer);
+
+        direct_int_lock lock;
+
+        interface.rx_queue.emplace_push(packet_buffer, packet.payload_size);
+        interface.rx_sem.release();
+
+        logging::logf(logging::log_level::TRACE, "rtl8139: Packet to self transmitted correctly\n");
+
+        return;
+    }
 
     auto& desc = *reinterpret_cast<rtl8139_t*>(interface.driver_data);
     auto iobase = desc.iobase;
@@ -207,7 +229,6 @@ void rtl8139::init_driver(network::interface_descriptor& interface, pci::device_
     logging::logf(logging::log_level::TRACE, "rtl8139: Initialize RTL8139 driver on pci:%u:%u:%u\n", uint64_t(pci_device.bus), uint64_t(pci_device.device), uint64_t(pci_device.function));
 
     rtl8139_t* desc = new rtl8139_t();
-    desc->interface = &interface;
 
     interface.driver_data = desc;
     interface.hw_send = send_packet;
@@ -304,4 +325,9 @@ void rtl8139::init_driver(network::interface_descriptor& interface, pci::device_
     interface.mac_address = mac;
 
     logging::logf(logging::log_level::TRACE, "rtl8139: MAC Address %h \n", mac);
+}
+
+void rtl8139::finalize_driver(network::interface_descriptor& interface){
+    auto* desc = static_cast<rtl8139_t*>(interface.driver_data);
+    desc->interface = &interface;
 }

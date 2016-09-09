@@ -1,14 +1,15 @@
 //=======================================================================
 // Copyright Baptiste Wicht 2013-2016.
-// Distributed under the Boost Software License, Version 1.0.
-// (See accompanying file LICENSE_1_0.txt or copy at
-//  http://www.boost.org/LICENSE_1_0.txt)
+// Distributed under the terms of the MIT License.
+// (See accompanying file LICENSE or copy at
+//  http://www.opensource.org/licenses/MIT)
 //=======================================================================
 
 #ifndef NET_ICMP_LAYER_H
 #define NET_ICMP_LAYER_H
 
 #include <types.hpp>
+#include <expected.hpp>
 
 #include "tlib/net_constants.hpp"
 
@@ -23,8 +24,8 @@ static_assert(sizeof(echo_request_header) == sizeof(header::rest), "Invalid size
 
 void decode(network::interface_descriptor& interface, network::ethernet::packet& packet);
 
-network::ethernet::packet prepare_packet(network::interface_descriptor& interface, network::ip::address target_ip, size_t payload_size, type t, size_t code);
-network::ethernet::packet prepare_packet(char* buffer, network::interface_descriptor& interface, network::ip::address target_ip, size_t payload_size, type t, size_t code);
+std::expected<network::ethernet::packet> prepare_packet(network::interface_descriptor& interface, network::ip::address target_ip, size_t payload_size, type t, size_t code);
+std::expected<network::ethernet::packet> prepare_packet(char* buffer, network::interface_descriptor& interface, network::ip::address target_ip, size_t payload_size, type t, size_t code);
 void finalize_packet(network::interface_descriptor& interface, network::ethernet::packet& p);
 
 void ping(network::interface_descriptor& interface, network::ip::address addr);

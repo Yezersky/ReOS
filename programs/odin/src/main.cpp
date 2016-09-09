@@ -1,8 +1,8 @@
 //=======================================================================
 // Copyright Baptiste Wicht 2013-2016.
-// Distributed under the Boost Software License, Version 1.0.
-// (See accompanying file LICENSE_1_0.txt or copy at
-//  http://www.boost.org/LICENSE_1_0.txt)
+// Distributed under the terms of the MIT License.
+// (See accompanying file LICENSE or copy at
+//  http://www.opensource.org/licenses/MIT)
 //=======================================================================
 #include <tlib/system.hpp>
 #include <tlib/graphics.hpp>
@@ -250,7 +250,7 @@ int main(int /*argc*/, char* /*argv*/[]){
     static constexpr const size_t sleep_timeout = 50;
 
     // Create a default window
-    windows.emplace_back(250, 250, 200, 400);
+    windows.emplace_back(250UL, 250UL, 200UL, 400UL);
 
     while(true){
         fill_buffer(background);

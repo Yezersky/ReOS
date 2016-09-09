@@ -1,8 +1,8 @@
 //=======================================================================
 // Copyright Baptiste Wicht 2013-2016.
-// Distributed under the Boost Software License, Version 1.0.
-// (See accompanying file LICENSE_1_0.txt or copy at
-//  http://www.boost.org/LICENSE_1_0.txt)
+// Distributed under the terms of the MIT License.
+// (See accompanying file LICENSE or copy at
+//  http://www.opensource.org/licenses/MIT)
 //=======================================================================
 
 #include <tlib/errors.hpp>
@@ -12,9 +12,9 @@
 #include "logging.hpp"
 #include "fs/devfs.hpp"
 
-int64_t ioctl(size_t device_fd, io::ioctl_request request, void* data){
+std::expected<size_t> ioctl(size_t device_fd, io::ioctl_request request, void* data){
     if(!scheduler::has_handle(device_fd)){
-        return -std::ERROR_INVALID_FILE_DESCRIPTOR;
+        return std::make_unexpected<size_t>(std::ERROR_INVALID_FILE_DESCRIPTOR);
     }
 
     auto& device = scheduler::get_handle(device_fd);
@@ -23,5 +23,5 @@ int64_t ioctl(size_t device_fd, io::ioctl_request request, void* data){
         return devfs::get_device_size(device, *reinterpret_cast<size_t*>(data));
     }
 
-    return std::ERROR_INVALID_REQUEST;
+    return std::make_unexpected<size_t>(std::ERROR_INVALID_REQUEST);
 }

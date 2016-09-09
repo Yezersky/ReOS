@@ -1,8 +1,8 @@
 //=======================================================================
 // Copyright Baptiste Wicht 2013-2016.
-// Distributed under the Boost Software License, Version 1.0.
-// (See accompanying file LICENSE_1_0.txt or copy at
-//  http://www.boost.org/LICENSE_1_0.txt)
+// Distributed under the terms of the MIT License.
+// (See accompanying file LICENSE or copy at
+//  http://www.opensource.org/licenses/MIT)
 //=======================================================================
 
 #ifndef NET_ARP_LAYER_H
@@ -39,6 +39,7 @@ void ip_to_ip2(network::ip::address source_ip, uint16_t* ip);
 void decode(network::interface_descriptor& interface, network::ethernet::packet& packet);
 
 void wait_for_reply();
+void wait_for_reply(size_t ms);
 
 } // end of arp namespace
 

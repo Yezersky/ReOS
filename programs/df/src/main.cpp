@@ -1,8 +1,8 @@
 //=======================================================================
 // Copyright Baptiste Wicht 2013-2016.
-// Distributed under the Boost Software License, Version 1.0.
-// (See accompanying file LICENSE_1_0.txt or copy at
-//  http://www.boost.org/LICENSE_1_0.txt)
+// Distributed under the terms of the MIT License.
+// (See accompanying file LICENSE or copy at
+//  http://www.opensource.org/licenses/MIT)
 //=======================================================================
 
 #include <tlib/file.hpp>
@@ -17,7 +17,7 @@ static constexpr const size_t BUFFER_SIZE = 4096;
 int main(int argc, char* argv[]){
     bool human = false;
 
-    for(size_t i = 1; i < argc; ++i){
+    for(size_t i = 1; i < size_t(argc); ++i){
         std::string param(argv[i]);
 
         if(param == "-h"){
