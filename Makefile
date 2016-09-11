@@ -68,8 +68,9 @@ bochs_simple: default
 	bochs -qf tools/bochsrc.txt
 
 mount_fat:
+	mkdir -p /tmp/ReOS/mnt/fake/
 	sudo /sbin/losetup -o1048576 /dev/loop0 /tmp/ReOS/hdd.img
-	sudo /bin/mount -t vfat /dev/loop0 mnt/fake/
+	sudo /bin/mount -t vfat /dev/loop0 /tmp/ReOS/mnt/fake/
 
 check_fat:
 	sudo /sbin/losetup -o1048576 /dev/loop0 /tmp/ReOS/hdd.img
@@ -79,7 +80,7 @@ check_fat:
 	sudo /sbin/losetup -d /dev/loop0
 
 umount_fat:
-	sudo /bin/umount mnt/fake/
+	sudo /bin/umount /tmp/ReOS/mnt/fake/
 	sudo /sbin/losetup -d /dev/loop0
 
 debug: default
