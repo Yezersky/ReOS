@@ -1,4 +1,6 @@
-default: debug/kernel.bin
+SHELL=/bin/bash
+
+default: /tmp/ReOS/kernel/debug/kernel.bin
 
 include ../cpp.mk
 
@@ -8,23 +10,9 @@ THOR_FLAGS=-DCONFIG_HISTORY=y
 CRTBEGIN_OBJ:=$(shell $(CXX) $(KERNEL_CPP_FLAGS_64) -print-file-name=crtbegin.o)
 CRTEND_OBJ:=$(shell $(CXX) $(KERNEL_CPP_FLAGS_64) -print-file-name=crtend.o)
 
-# Compile the 16-bit and 32-bit parts of the executable
-
-boot_16.o: src/boot/boot_16.cpp
-	$(CXX) $(COMMON_CPP_FLAGS) $(FLAGS_16) $(THOR_FLAGS) $(WARNING_FLAGS) -c src/boot/boot_16.cpp -o boot_16.o
-
-boot_32.o: src/boot/boot_32.cpp
-	$(CXX) $(COMMON_CPP_FLAGS) $(FLAGS_32) $(THOR_FLAGS) $(WARNING_FLAGS) -c src/boot/boot_32.cpp -o boot_32.o
-
-boot_16_64.o: boot_16.o
-	$(OC) -I elf32-i386 -O elf64-x86-64 boot_16.o boot_16_64.o
-
-boot_32_64.o: boot_32.o
-	$(OC) -I elf32-i386 -O elf64-x86-64 boot_32.o boot_32_64.o
-
 # Compile the assembly code
 
-$(eval $(call compile_assembly_folder,src))
+$(eval $(call kernel_compile_assembly_folder,src))
 
 # Compile all the kernel CPP code
 
@@ -48,22 +36,22 @@ $(eval $(call acpica_folder_compile,utilities))
 -include $(D_FILES)
 
 # Remove special files from O_FILES
-O_FILES := $(filter-out debug/src/crti.s.o,$(O_FILES))
-O_FILES := $(filter-out debug/src/crtn.s.o,$(O_FILES))
+O_FILES := $(filter-out /tmp/ReOS/kernel/debug/src/crti.s.o,$(O_FILES))
+O_FILES := $(filter-out /tmp/ReOS/kernel/debug/src/crtn.s.o,$(O_FILES))
 
 # COmpute the link files order
-LINK_O_FILES=debug/src/crti.s.o $(CRTBEGIN_OBJ) $(O_FILES) $(CRTEND_OBJ) debug/src/crtn.s.o
+LINK_O_FILES=/tmp/ReOS/kernel/debug/src/crti.s.o $(CRTBEGIN_OBJ) $(O_FILES) $(CRTEND_OBJ) /tmp/ReOS/kernel/debug/src/crtn.s.o
 
-debug/kernel.bin: $(LINK_O_FILES)
-	@ mkdir -p debug/
+/tmp/ReOS/kernel/debug/kernel.bin: $(LINK_O_FILES)
+	@ mkdir -p /tmp/ReOS/kernel/debug/
 	@ echo -e "$(MODE_COLOR)[debug]$(NO_COLOR) Link $(FILE_COLOR)$@$(NO_COLOR)"
 	@ $(CXX) $(KERNEL_LINK_FLAGS) $(KERNEL_CPP_FLAGS_64) -o $@.o $(LINK_O_FILES)
 	@ $(OC) -R .note -R .comment -O binary --set-section-flags .bss=alloc,load,contents $@.o $@
 
 clean:
 	@ echo -e "Remove compiled files (deps/objects)"
-	@ rm -rf debug
-	@ rm -f crti.o
-	@ rm -f crts.o
+	@ rm -rf /tmp/ReOS/kernel/debug
+	@ rm -f /tmp/ReOS/kernel/crti.o
+	@ rm -f /tmp/ReOS/kernel/crts.o
 	@ echo -e "Remove bin files"
-	@ rm -f *.bin
+	@ rm -f /tmp/ReOS/kernel/*.bin
