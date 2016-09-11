@@ -8,10 +8,10 @@ default: thor.flp
 	(echo n; echo p; echo 1; echo ""; echo ""; echo t; echo c; echo a; echo w;) | fdisk -u -C1000 -S63 -H16 /tmp/ReOS/hdd.img
 
 /tmp/ReOS/bootloader/stage1.bin:
-	cd bootloader; $(MAKE) stage1.bin
+	cd bootloader; $(MAKE) /tmp/ReOS/bootloader/stage1.bin
 
 /tmp/ReOS/bootloader/stage2.bin:
-	cd bootloader; $(MAKE) stage2.bin
+	cd bootloader; $(MAKE) /tmp/ReOS/bootloader/stage2.bin
 
 /tmp/ReOS/init/debug/init.bin: force_look
 	cd init; $(MAKE)
