@@ -57,6 +57,8 @@ std::string get_value(uint64_t pid, const std::string& name){
         return process.process.system ? "true" : "false";
     } else if(name == "priority"){
         return std::to_string(process.process.priority);
+    } else if(name == "name"){
+        return process.process.name;
     } else {
         return "";
     }
@@ -74,6 +76,7 @@ procfs::procfs_file_system::procfs_file_system(std::string mp) : mount_point(mp)
     standard_contents.emplace_back("state", false, false, false, 0);
     standard_contents.emplace_back("system", false, false, false, 0);
     standard_contents.emplace_back("priority", false, false, false, 0);
+    standard_contents.emplace_back("name", false, false, false, 0);
 }
 
 procfs::procfs_file_system::~procfs_file_system(){
