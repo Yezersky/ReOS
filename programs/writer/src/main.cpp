@@ -17,15 +17,20 @@ int main(int argc, char* argv[]){
         exit(1);
     }
 
+    print_line("The following text will be writed in file:");
+    char buffer[64];
+    auto c = read_input(buffer, 15);
+    buffer[c] = '\0';
+
     auto fd = open(argv[1], std::OPEN_CREATE);
 
     if(fd.valid()){
-        auto truncate_result = truncate(*fd, 12);
+        auto truncate_result = truncate(*fd, c);
 
         if(truncate_result.valid()){
-            auto s = "0123456789AB";
+            // auto s = "0123456789AB";
 
-            auto write_result = write(*fd, s, 12, 0);
+            auto write_result = write(*fd, buffer, c, 0);
 
             if(write_result.valid()){
                 //TODO
