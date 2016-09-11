@@ -4,10 +4,16 @@
 // (See accompanying file LICENSE or copy at
 //  http://www.opensource.org/licenses/MIT)
 //=======================================================================
+
+#include <random.hpp>
+
 #include <tlib/system.hpp>
 #include <tlib/graphics.hpp>
 #include <tlib/print.hpp>
 #include <tlib/malloc.hpp>
+
+// TODO The order of the windows should be maintained by an
+// intrusive list
 
 namespace {
 
@@ -146,9 +152,11 @@ public:
     window(){}
 
     window(size_t x, size_t y, size_t width, size_t height) : x(x), y(y), width(width), height(height) {
-        //TODO This shit does not work
-        color = make_color(51, 51, 51);
-        border_color = make_color(250, 250, 250);
+        std::default_random_engine eng(tlib::ms_time());
+        std::uniform_int_distribution<> color_dist(0, 255);
+
+        color        = make_color(color_dist(eng), color_dist(eng), color_dist(eng));
+        border_color = make_color(color_dist(eng), color_dist(eng), color_dist(eng));
     }
 
     window(const window& rhs) = default;
@@ -209,6 +217,10 @@ public:
         return mouse_x >= x && mouse_x <= x + width && mouse_y >= y + 2 && mouse_y <= mouse_y + 18;
     }
 
+    bool inside(size_t look_x, size_t look_y){
+        return look_x >= x && look_x <= x + width && look_y >= y && look_y <= y + height;
+    }
+
     void start_drag(){
         if(!drag){
             drag = true;
@@ -223,6 +235,26 @@ public:
 };
 
 std::vector<window> windows;
+
+void raise(){
+    auto mouse_x = tlib::graphics::mouse_x();
+    auto mouse_y = tlib::graphics::mouse_y();
+
+    for(auto it = windows.begin(); it != windows.end(); ++it){
+        auto& window = *it;
+
+        if(window.inside(mouse_x, mouse_y)){
+            //If the window is not the first, we raise it
+            if(it != windows.begin()){
+                auto copy = window;
+                windows.erase(it);
+                windows.push_front(copy);
+            }
+
+            break;
+        }
+    }
+}
 
 } // end of anonnymous namespace
 
@@ -249,8 +281,10 @@ int main(int /*argc*/, char* /*argv*/[]){
 
     static constexpr const size_t sleep_timeout = 50;
 
-    // Create a default window
-    windows.emplace_back(250UL, 250UL, 200UL, 400UL);
+    std::default_random_engine eng(tlib::ms_time());
+    std::uniform_int_distribution<> width_dist(200, 300);
+    std::uniform_int_distribution<> height_dist(100, 250);
+    std::uniform_int_distribution<> position_dist(0, 500);
 
     while(true){
         fill_buffer(background);
@@ -261,9 +295,10 @@ int main(int /*argc*/, char* /*argv*/[]){
             window.update();
         }
 
-        for(auto& window : windows){
+        // Draw the window from back to front
+        std::for_each(windows.rbegin(), windows.rend(), [](window& window) {
             window.draw();
-        }
+        });
 
         paint_cursor();
 
@@ -274,16 +309,25 @@ int main(int /*argc*/, char* /*argv*/[]){
         auto after = tlib::ms_time();
 
         if(code != std::keycode::TIMEOUT){
-            // TODO Handle event at this point
-
             switch(code){
+                case std::keycode::RELEASED_ENTER: {
+                    size_t width  = width_dist(eng);
+                    size_t height = width_dist(eng);
+                    size_t pos_x  = position_dist(eng);
+                    size_t pos_y  = position_dist(eng);
+
+                    windows.emplace_back(width, height, pos_x, pos_y);
+
+                    break;
+                }
+
                 case std::keycode::MOUSE_LEFT_PRESS:
                     tlib::user_logf("odin: left press");
 
-                    for(auto& window: windows){
-                        if(window.mouse_in_title()){
-                            window.start_drag();
-                        }
+                    raise();
+
+                    if(windows.front().mouse_in_title()){
+                        windows.front().start_drag();
                     }
 
                     break;
@@ -291,17 +335,21 @@ int main(int /*argc*/, char* /*argv*/[]){
                 case std::keycode::MOUSE_LEFT_RELEASE:
                     tlib::user_logf("odin: left release");
 
-                    for(auto& window: windows){
-                        window.stop_drag();
-                    }
+                    raise();
+
+                    windows.front().stop_drag();
 
                     break;
 
                 case std::keycode::MOUSE_RIGHT_PRESS:
+                    raise();
+
                     tlib::user_logf("odin: right press");
                     break;
 
                 case std::keycode::MOUSE_RIGHT_RELEASE:
+                    raise();
+
                     tlib::user_logf("odin: right release");
                     break;
 
