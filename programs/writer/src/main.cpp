@@ -19,7 +19,7 @@ int main(int argc, char* argv[]){
 
     print_line("The following text will be writed in file:");
     char buffer[64];
-    auto c = read_input(buffer, 15);
+    auto c = read_input(buffer, 63);
     buffer[c] = '\0';
 
     auto fd = open(argv[1], std::OPEN_CREATE);
