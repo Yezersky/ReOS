@@ -22,7 +22,7 @@ default: thor.flp
 /tmp/ReOS/tlib/debug/libtlib.a: force_look
 	cd tlib; $(MAKE)
 
-/tmp/ReOS/programs: force_look tlib/debug/libtlib.a
+/tmp/ReOS/programs: force_look /tmp/ReOS/tlib/debug/libtlib.a
 	cd programs/; ${MAKE} dist
 
 compile: /tmp/ReOS/bootloader/stage1.bin /tmp/ReOS/bootloader/stage2.bin /tmp/ReOS/init/debug/init.bin /tmp/ReOS/kernel/debug/kernel.bin /tmp/ReOS/programs
@@ -102,3 +102,4 @@ clean:
 	cd tlib/; $(MAKE) clean
 	rm -f *.bin
 	rm -f *.flp
+	rm -rf /tmp/ReOS

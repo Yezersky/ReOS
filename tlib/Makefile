@@ -16,7 +16,7 @@ test:
 /tmp/ReOS/tlib/debug/libtlib.a: /tmp/ReOS/tlib/debug/src/crti.s.o /tmp/ReOS/tlib/debug/src/crtn.s.o $(O_FILES)
 	@ mkdir -p /tmp/ReOS/tlib/debug/
 	@ echo -e "$(MODE_COLOR)[debug]$(NO_COLOR) Link (tlib) $(FILE_COLOR)$@$(NO_COLOR)"
-	@ ${AR} rcs debug/libtlib.a $(O_FILES)
+	@ ${AR} rcs /tmp/ReOS/tlib/debug/libtlib.a $(O_FILES)
 
 -include $(D_FILES)
 
