@@ -38,5 +38,7 @@ programs/df/df
 programs/dist/
 tstl/tester
 
+data/
+
 # Ignore the generated log (Qemu)
 *.log
