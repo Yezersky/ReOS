@@ -1,9 +1,11 @@
-thor-os
+ReOS based on thor-os
 =======
 
-Thor is a minimalistic operating system created for learning reasons.
+ReOS based on thor-os is a minimalistic operating system created for learning reasons.
 
 It is currently a 64bit OS written in assembly and C++.
+
+It supports simple graphics operation.
 
 ## Build ##
 
