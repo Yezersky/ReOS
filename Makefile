@@ -29,7 +29,13 @@ default: thor.flp
 
 compile: /tmp/ReOS/bootloader/stage1.bin /tmp/ReOS/bootloader/stage2.bin /tmp/ReOS/init/debug/init.bin /tmp/ReOS/kernel/debug/kernel.bin /tmp/ReOS/programs
 
-thor.flp: /tmp/ReOS/hdd.img /tmp/ReOS/bootloader/stage1.bin /tmp/ReOS/bootloader/stage2.bin /tmp/ReOS/init/debug/init.bin /tmp/ReOS/kernel/debug/kernel.bin /tmp/ReOS/programs
+data/:
+	mkdir data/
+
+/tmp/ReOS/data: data/
+	cp -R data /tmp/ReOS/data
+
+thor.flp: /tmp/ReOS/hdd.img /tmp/ReOS/bootloader/stage1.bin /tmp/ReOS/bootloader/stage2.bin /tmp/ReOS/init/debug/init.bin /tmp/ReOS/kernel/debug/kernel.bin /tmp/ReOS/programs /tmp/ReOS/data
 	mkdir -p /tmp/ReOS/mnt/fake/
 	dd if=/tmp/ReOS/bootloader/stage1.bin of=/tmp/ReOS/hdd.img conv=notrunc
 	dd if=/tmp/ReOS/bootloader/stage2.bin of=/tmp/ReOS/hdd.img seek=1 conv=notrunc
@@ -40,9 +46,11 @@ thor.flp: /tmp/ReOS/hdd.img /tmp/ReOS/bootloader/stage1.bin /tmp/ReOS/bootloader
 	sudo mkdir /tmp/ReOS/mnt/fake/sys/
 	sudo mkdir /tmp/ReOS/mnt/fake/dev/
 	sudo mkdir /tmp/ReOS/mnt/fake/proc/
+	sudo mkdir /tmp/ReOS/mnt/fake/data/
 	sudo /bin/cp /tmp/ReOS/init/debug/init.bin /tmp/ReOS/mnt/fake/
 	sudo /bin/cp /tmp/ReOS/kernel/debug/kernel.bin /tmp/ReOS/mnt/fake/
 	sudo /bin/cp /tmp/ReOS/programs/dist/* /tmp/ReOS/mnt/fake/bin/
+	sudo /bin/cp /tmp/ReOS/data/* /tmp/ReOS/mnt/fake/data/
 	sleep 1
 	sudo /bin/umount /tmp/ReOS/mnt/fake/
 	sudo /sbin/losetup -d /dev/loop0
@@ -97,4 +105,5 @@ clean:
 	cd tlib/; $(MAKE) clean
 	rm -f *.bin
 	rm -f *.flp
+	rm -rf /tmp/ReOS/data/
 	rm -rf /tmp/ReOS
