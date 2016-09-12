@@ -188,7 +188,7 @@ void init_task(){
     std::vector<std::string> params;
 
     while(true){
-        auto pid = scheduler::exec("/bin/tsh", params);
+        auto pid = scheduler::exec("/bin/sh", params);
         scheduler::await_termination(pid);
 
         logging::log(logging::log_level::DEBUG, "shell exited, run new one\n");
