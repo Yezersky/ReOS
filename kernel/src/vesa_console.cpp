@@ -36,11 +36,6 @@ void vesa_console::init(){
     vesa::draw_vline(MARGIN, MARGIN, block.height - 2 * MARGIN, _color);
     vesa::draw_vline(block.width - MARGIN, MARGIN, block.height - 2 * MARGIN, _color);
 
-    vesa::draw_rect(512 - 5 - 50, 384 - 5 - 50, 50, 50, vesa::make_color(242,  80,  34));
-    vesa::draw_rect(512 + 5,      384 - 5 - 50, 50, 50, vesa::make_color(127, 186,   0));
-    vesa::draw_rect(512 - 5 - 50, 384 + 5,      50, 50, vesa::make_color(  1, 164, 239));
-    vesa::draw_rect(512 + 5,      384 + 5,      50, 50, vesa::make_color(255, 185,   1));
-
     auto title_left = (block.width - 4 * 8) / 2;
     vesa::draw_char(title_left, PADDING + MARGIN, 'R', _color);
     vesa::draw_char(title_left + 8, PADDING + MARGIN, 'e', _color);
