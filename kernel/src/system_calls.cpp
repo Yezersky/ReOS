@@ -14,6 +14,8 @@
 #include "rtc.hpp"
 #include "kernel_utils.hpp"
 #include "vfs/vfs.hpp"
+#include "vesa.hpp"
+#include "kbmplib.hpp"
 
 namespace {
 
@@ -219,6 +221,24 @@ void sc_datetime(interrupt::syscall_regs* regs){
     *date = rtc::all_data();
 }
 
+void sc_draw(interrupt::syscall_regs* regs) {
+    if(vesa::enabled()){
+        vesa::draw_rect(512 - 5 - 50, 384 - 5 - 50, 50, 50, vesa::make_color(242,  80,  34));
+        vesa::draw_rect(512 + 5,      384 - 5 - 50, 50, 50, vesa::make_color(127, 186,   0));
+        vesa::draw_rect(512 - 5 - 50, 384 + 5,      50, 50, vesa::make_color(  1, 164, 239));
+        vesa::draw_rect(512 + 5,      384 + 5,      50, 50, vesa::make_color(255, 185,   1));
+    } else {
+        // TODO display error in console
+    }
+}
+
+void sc_display_bmp(interrupt::syscall_regs* regs) {
+    auto fd = regs->rbx;
+    auto size = regs->rcx;
+    auto file = reinterpret_cast<char*>(regs->rdx);
+    display_bmp(fd, size, file);
+}
+
 } //End of anonymous namespace
 
 void system_call_entry(interrupt::syscall_regs* regs){
@@ -335,6 +355,14 @@ void system_call_entry(interrupt::syscall_regs* regs){
 
         case 400:
             sc_datetime(regs);
+            break;
+
+        case 410:
+            sc_draw(regs);
+            break;
+
+        case 420:
+            sc_display_bmp(regs);
             break;
 
         case 0x666:

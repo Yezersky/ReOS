@@ -1,6 +1,6 @@
 SHELL=/bin/bash
 
-EXEC_NAME=tsh
+EXEC_NAME=view
 BUILD_PATH=/tmp/ReOS/programs/$(EXEC_NAME)/debug
 
 .PHONY: default clean
